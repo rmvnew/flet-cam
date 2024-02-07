@@ -24,30 +24,31 @@ def main(page: ft.Page):
 
     def select_action(option):
         if option == 0:
-            start_cam()
+            ...
+            # start_cam()
         elif option == 1:
             ...
         elif option == 2:
             ...
                 
 
-    def start_cam():
+    # def start_cam():
         
 
-        while True:
-            ret,frame = cap.read()
+    #     while True:
+    #         ret,frame = cap.read()
 
-            if not ret:
-                break
+    #         if not ret:
+    #             break
 
-            cv.imshow('scream',frame)
-            # current_frame = frame
-            # current_frame.update()
+    #         cv.imshow('scream',frame)
+    #         # current_frame = frame
+    #         # current_frame.update()
             
             
 
-            if cv.waitKey(1) & 0xff == ord('q'):
-                break
+    #         if cv.waitKey(1) & 0xff == ord('q'):
+    #             break
             
 
     rail = ft.NavigationRail(

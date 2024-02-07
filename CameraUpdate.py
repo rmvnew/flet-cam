@@ -1,8 +1,9 @@
 from threading import Thread
 import flet as ft
-import cv2
+import cv2 as cv
 import base64
 import requests
+from pyzbar import pyzbar
 
 
 camera = 1
@@ -12,6 +13,38 @@ class Update(ft.UserControl):
     def __init__(self):
         super().__init__()
 
+    def ler_codigos(self,frame, codigos_detectados):
+        """
+        Lê os códigos QR e barcodes do frame e retorna o frame modificado.
+        Se um novo código for detectado, ele é salvo.
+        """
+        codigos = pyzbar.decode(frame)
+        if not codigos:
+            # Calcula a posição para a mensagem no canto superior direito
+            texto = "Nenhum codigo detectado!"
+            (largura_texto, altura_texto), _ = cv.getTextSize(texto, cv.FONT_HERSHEY_SIMPLEX, 0.7, 2)
+            posicao_x = frame.shape[1] - largura_texto - 10  # Subtrai a largura do texto e um pouco mais para margem
+            posicao_y = altura_texto + 10  # A altura do texto mais um pouco para margem
+
+            # Exibe mensagem quando nenhum código é detectado
+            cv.putText(frame, texto, (posicao_x, posicao_y), 
+                    cv.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2, cv.LINE_AA)
+        
+        for codigo in codigos:
+            x, y, w, h = codigo.rect
+            cv.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+
+            dados_codigo = codigo.data.decode('utf-8')
+            tipo_codigo = codigo.type
+            texto = f'{dados_codigo} ({tipo_codigo})'
+            cv.putText(frame, texto, (x, y - 10), cv.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 0), 3)
+
+            if dados_codigo not in codigos_detectados:
+                codigos_detectados.add(dados_codigo)
+                
+
+        return frame    
+
     def did_mount(self):
         t = Thread(target=self.update_timer, args=[])
         t.start()
@@ -19,7 +52,7 @@ class Update(ft.UserControl):
 
     def update_timer(self):
         
-
+        codigos_detectados = set()
 
         while True:
             
@@ -29,7 +62,8 @@ class Update(ft.UserControl):
 
             ret, frame = self.cap.read()
             if(ret):
-                _, im_arr = cv2.imencode('.jpg', frame)
+                frame = self.ler_codigos(frame,codigos_detectados)
+                _, im_arr = cv.imencode('.jpg', frame)
                 im_b64 = base64.b64encode(im_arr)
                 self.img.src_base64 = im_b64.decode('utf-8')
 
@@ -42,15 +76,15 @@ class Update(ft.UserControl):
     def will_unmount(self):
         self.cap.release()
     def build(self):
-        self.cap = cv2.VideoCapture(camera)
-        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1080)
-        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+        self.cap = cv.VideoCapture(camera)
+        self.cap.set(cv.CAP_PROP_FRAME_WIDTH, 1080)
+        self.cap.set(cv.CAP_PROP_FRAME_HEIGHT, 480)
         
-        self.cap.set(cv2.CAP_PROP_AUTOFOCUS, 0)
-        self.cap.set(cv2.CAP_PROP_FOCUS, 0)
-        self.cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 0)
-        self.cap.set(cv2.CAP_PROP_EXPOSURE, -7)
-        self.cap.set(cv2.CAP_PROP_FPS, 60)
+        self.cap.set(cv.CAP_PROP_AUTOFOCUS, 1)
+        self.cap.set(cv.CAP_PROP_FOCUS, 0)
+        self.cap.set(cv.CAP_PROP_AUTO_EXPOSURE, 0)
+        self.cap.set(cv.CAP_PROP_EXPOSURE, -7)
+        self.cap.set(cv.CAP_PROP_FPS, 24)
         self.contador = 0
         self.ignore = False
 
